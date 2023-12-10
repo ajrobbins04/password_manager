@@ -4,15 +4,14 @@ mod menu;  // Will either look for menu.rs in same directory or, if not
 mod records;
 
 fn main() {
-    //menu::menu::run_main_menu();
-    //menu::menu::add_entry_menu();
-    build_db();
+    menu::menu::run_main_menu();
     
 }
 
 use rusqlite::{Connection, Result};
-use std::fs::File;
 
+/* This method only needed to be run once to created the db.
+   It is being kept in case the db ever needs to be re-built. */
 fn build_db() -> Result<()> {  // returns a Result tuple
 
     // '?' simplifies Result & Option error handling
