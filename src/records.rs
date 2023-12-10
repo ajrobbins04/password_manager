@@ -1,8 +1,10 @@
 
 pub mod records {
-    use serde::{Deserialize, Serialize}; // traits for manipulations involving JSON
 
-    #[derive(Debug, Serialize, Deserialize)]
+    use rusqlite::{Connection, Result};
+    use std::fs::File;
+
+    #[derive(Debug)] // gives the derived trait to AccountInfo
     pub struct AccountInfo {
         pub account: String,
         pub username: String,
@@ -24,16 +26,6 @@ pub mod records {
                 password: String::from("default_password"),
             }
         }
-    }
-
-    impl Transfer for AccountInfo {
-        // serializes data to be stored in json files
-        fn convert_to_json(&self) -> String {
-    
-            let json = serde_json::to_string(&self).expect("Failed to serialize data to JSON.");
-            json // return
-        }
-       
     }
 
     pub fn generate_password() -> Vec<char> {
@@ -82,4 +74,10 @@ pub mod records {
 
     
     }*/
+    
+    fn read_sql_from_file(path: &str) -> String {
+        let mut file: File = File::open(path).unwrap();
+        let mut contents: String = String::new();
+        contents
+    }
 }
