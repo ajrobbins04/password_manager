@@ -5,8 +5,51 @@
 pub mod menu {
     use std::io; // input/output functionality
     use std::io::Write;
-    use crate::records::records::AccountInfo; // 'crate' begins module search at root of project
+    use crate::records::records::{AccountInfo, lookup_user}; // 'crate' begins module search at root of project
 
+    pub fn login_menu() {
+        let logged_in = false;
+        let mut username_input = String::new();
+        let mut password_input = String::new();
+        loop {   
+            println!("Password Manager Login"); // '!' denotes that println is a macro.
+            println!();
+            println!("Enter Username: ");
+            username_input = get_input();
+            
+            if username_input.is_empty() {
+                println!();
+                println!("ERROR: No username entered. Please try again.");
+            }
+            else {
+                println!();
+                println!("Enter Password: ");
+                password_input = get_input();
+
+                if password_input.is_empty() {
+                    println!();
+                    println!("ERROR: No password entered. Please try again.");
+                }
+                else {
+                    match lookup_user(&username_input, &password_input) {
+                        // use wildcard, since value has already been set as user_id
+                        // in lookup_user & no longer matters
+                        Ok(_) => {
+                            println!("You are logged in!");
+                            run_main_menu();
+                        }
+                        Err(e) => {
+                            println!("The login attempt failed. Please try again.");
+                            login_menu();
+                        }
+                    }
+                }
+            }
+           
+            // will need to allocate data from the heap for a String
+            let mut input = get_input();
+        }
+    }
     pub fn run_main_menu() {
         // exit condition for the loop
         let mut run_manager: bool = true;
@@ -26,7 +69,7 @@ pub mod menu {
 
             match input.as_str() {
                 "1" => {
-                    add_entry_menu()
+                    add_entry_menu();
                 },
                 "2" => {
                     println!("2!")
@@ -38,7 +81,6 @@ pub mod menu {
                     println!("4!")
                 },
                 "5" => {  // exit the program
-                    println!("5!");
                     run_manager = false; 
                 }
                 _ => { // wildcard input
@@ -69,7 +111,7 @@ pub mod menu {
                     println!("y!")
                 },
                 "n" => {
-                    prompt_account_info_all();
+                    let entry: AccountInfo = prompt_account_info_all();
                 }
                 "q" => {
                     run_options = false;
@@ -105,13 +147,12 @@ pub mod menu {
                 };
                 complete = true;
             }
-
             if complete {
                 break;
             }
         }
-
         entry
+
     }
 
     fn get_input() -> String {

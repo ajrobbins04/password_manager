@@ -20,7 +20,7 @@
 
 {Make a list of websites that you found helpful in this project}
 
-- [Web Site Name](http://url.link.goes.here)
+- [Log Rocket](https://blog.logrocket.com/)
 - [Web Site Name](http://url.link.goes.here)
 
 # Future Work

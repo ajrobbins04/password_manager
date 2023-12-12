@@ -1,8 +1,13 @@
+/* records module deals with structs and methods
+where information must be recorded in the manager 
+database or retrieved from it. */
 
 pub mod records {
-
+    
     use rusqlite::{Connection, Result};
+    use rusqlite::Error;
     use std::fs::File;
+    use std::cell::Cell; // bends rules of immutability to change userId value
 
     #[derive(Debug)] // gives the derived trait to AccountInfo
     pub struct AccountInfo {
@@ -11,9 +16,47 @@ pub mod records {
         pub password: String
     }
 
-    trait Transfer {
-        fn convert_to_json(&self) -> String;
+    thread_local! {
+        // value is None if a user is not logged in or an unsigned int up to 255
+        static USER_ID: Cell<Option<u8>> = Cell::new(None);
     }
+
+    fn set_user_id(id: Option<u8>) {
+        USER_ID.with(|cell| { // closures (denoted using ||) are similar to anonymous functions
+            cell.set(id); // variants of Option are either Some or None
+        })
+    }
+  
+    pub fn lookup_user(username_input: &str, password_input: &str) -> Result<()> {
+        let conn = Connection::open("manager.db")?;
+    
+        let sql = "SELECT clientId FROM clients WHERE username = ? AND password = ?";
+    
+        // final argument ensures that only one row at the most is found (as it should be anyways)
+        let user_id: u8 = conn.query_row(sql, [username_input, password_input], |row| row.get(0))?;
+        
+        // will only be called if a user_id is found due to '?' error propagation
+        set_user_id(Some(user_id)); // must convert user_id to Option<u8>
+        Ok(())
+    }
+
+    // retrieves current value for USER_ID
+    fn get_user_id() -> Option<u8> {
+        USER_ID.with(|cell| {
+            cell.get()
+        })
+    }
+
+    trait Transfer {
+       fn add_account() -> Result<()>;
+    }
+
+    /*impl Transfer for AccountInfo {
+        fn add_account(entry: AccountInfo) -> Result<()> {
+            let conn = Connection::open("manager.db")?; 
+            let stmt: &str = "INSERT INTO accounts ()"
+        }
+    }*/
 
     // implements a Default trait for AccountInfo
     // to avoid ownership-related issues by waiting
@@ -47,33 +90,6 @@ pub mod records {
         }
         chars_pool
     } 
-
-    
-   /*  pub fn get_all_account_info() -> Vec<AccountInfo> {
-        let mut accounts: Vec<AccountInfo> = Vec::new();
-        let mut not_complete: bool = true;
-
-        loop {
-            let account_name = get_account_name();
-            let username = get_username();
-            let password = get_password();
-
-            if !account_name.is_empty() && !username.is_empty()
-            && !password.is_empty() {
-                let entry = AccountInfo {
-                    account: account_name,
-                    username,
-                    password,
-                };
-                accounts.push(entry);
-
-                println!("Account added successfully!");
-                println!();
-            }
-        }accounts
-
-    
-    }*/
     
     fn read_sql_from_file(path: &str) -> String {
         let mut file: File = File::open(path).unwrap();
