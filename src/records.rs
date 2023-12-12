@@ -21,7 +21,7 @@ pub mod records {
         static USER_ID: Cell<Option<u8>> = Cell::new(None);
     }
 
-    fn set_user_id(id: Option<u8>) {
+    pub fn set_user_id(id: Option<u8>) {
         USER_ID.with(|cell| { // closures (denoted using ||) are similar to anonymous functions
             cell.set(id); // variants of Option are either Some or None
         })
@@ -34,9 +34,10 @@ pub mod records {
     
         // final argument ensures that only one row at the most is found (as it should be anyways)
         let user_id: u8 = conn.query_row(sql, [username_input, password_input], |row| row.get(0))?;
-        
+        println!("{:?}", Some(user_id));
         // will only be called if a user_id is found due to '?' error propagation
         set_user_id(Some(user_id)); // must convert user_id to Option<u8>
+    
         Ok(())
     }
 

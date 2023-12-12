@@ -5,14 +5,40 @@
 pub mod menu {
     use std::io; // input/output functionality
     use std::io::Write;
-    use crate::records::records::{AccountInfo, lookup_user}; // 'crate' begins module search at root of project
+    use crate::records::records::{AccountInfo, lookup_user, set_user_id}; // 'crate' begins module search at root of project
 
-    pub fn login_menu() {
-        let logged_in = false;
+    pub fn run_main_menu() {
+        let mut run_program = true;
+        
+        loop {
+            println!("Welcome to the Password Manager!"); // '!' denotes that println is a macro.
+            println!("Enter 'y' to login or 'n' to close the program: ");
+            let input = get_one_letter_input();
+
+            match input.as_str() {
+                "y" => { 
+                    run_login_menu();
+                },
+                "n" => {
+                    run_program = false;
+                }
+                _ => {
+                    println!("ERROR: Invalid input detected. Please enter 'y' to login or 'n' to logout.");
+                }
+            }  
+            if !run_program { // end program
+                println!();
+                println!("Goodbye!");
+                break;
+            }
+        }
+    }
+    pub fn run_login_menu() {
+        let mut run_menu = true; 
         let mut username_input = String::new();
         let mut password_input = String::new();
         loop {   
-            println!("Password Manager Login"); // '!' denotes that println is a macro.
+            println!("Password Manager Login");
             println!();
             println!("Enter Username: ");
             username_input = get_input();
@@ -36,12 +62,21 @@ pub mod menu {
                         // in lookup_user & no longer matters
                         Ok(_) => {
                             println!("You are logged in!");
-                            run_main_menu();
+
+                            // only stops running when user wants to logout
+                            run_logged_in_menu();
+                            set_user_id(None); // Option can either be None or Some()
+                            run_menu = false;
+                            println!("Logout successful")
+
                         }
                         Err(e) => {
                             println!("The login attempt failed. Please try again.");
-                            login_menu();
+                            run_main_menu();
                         }
+                    }
+                    if !run_menu {
+                        break;
                     }
                 }
             }
@@ -50,9 +85,9 @@ pub mod menu {
             let mut input = get_input();
         }
     }
-    pub fn run_main_menu() {
+    pub fn run_logged_in_menu() {
         // exit condition for the loop
-        let mut run_manager: bool = true;
+        let mut run_menu: bool = true;
 
         loop {   
             println!("Password Manager Menu:"); // '!' denotes that println is a macro.
@@ -60,9 +95,9 @@ pub mod menu {
             println!("2. View All Entries");
             println!("3. Edit an Entry");
             println!("4. Delete an Entry");
-            println!("5. Exit Password Manager");
+            println!("5. Logout");
             println!();
-            println!("Enter your selection from 1-5: ");
+            println!("Enter your selection from 1-6: ");
 
             // will need to allocate data from the heap for a String
             let mut input = get_input();
@@ -80,18 +115,15 @@ pub mod menu {
                 "4" => {
                     println!("4!")
                 },
-                "5" => {  // exit the program
-                    run_manager = false; 
+                "5" => {  // logout 
+                    run_menu = false; 
                 }
                 _ => { // wildcard input
                     println!("ERROR: Invalid input detected. Please enter a number from 1 - 5.");
                     println!();
                 }
             }
-
-            if !run_manager {
-                println!();
-                println!("Goodbye!");
+            if !run_menu {
                 break;
             }
         }
