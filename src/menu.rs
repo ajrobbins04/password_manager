@@ -5,31 +5,33 @@
 pub mod menu {
     use std::io; // input/output functionality
     use std::io::Write;
-    use crate::records::records::{AccountInfo, lookup_user, set_user_id}; // 'crate' begins module search at root of project
+    use crate::records::records::{AccountInfo, Transfer, lookup_user, set_client_id, get_client_id}; // 'crate' begins module search at root of project
 
     pub fn run_main_menu() {
         let mut run_program = true;
         
         loop {
-            println!("Welcome to the Password Manager!"); // '!' denotes that println is a macro.
+            // '!' denotes that println! is a macro.
             println!("Enter 'y' to login or 'n' to close the program: ");
             let input = get_one_letter_input();
 
             match input.as_str() {
                 "y" => { 
+                    println!(); 
                     run_login_menu();
                 },
                 "n" => {
                     run_program = false;
                 }
                 _ => {
+                    println!();
                     println!("ERROR: Invalid input detected. Please enter 'y' to login or 'n' to logout.");
                 }
-            }  
+            } 
             if !run_program { // end program
                 println!();
                 println!("Goodbye!");
-                break;
+                break; 
             }
         }
     }
@@ -61,16 +63,19 @@ pub mod menu {
                         // use wildcard, since value has already been set as user_id
                         // in lookup_user & no longer matters
                         Ok(_) => {
+                            println!();
                             println!("You are logged in!");
 
                             // only stops running when user wants to logout
                             run_logged_in_menu();
-                            set_user_id(None); // Option can either be None or Some()
+                            set_client_id(None); // Option can either be None or Some()
                             run_menu = false;
+                            println!();
                             println!("Logout successful")
 
                         }
                         Err(e) => {
+                            println!();
                             println!("The login attempt failed. Please try again.");
                             run_main_menu();
                         }
@@ -89,15 +94,16 @@ pub mod menu {
         // exit condition for the loop
         let mut run_menu: bool = true;
 
-        loop {   
-            println!("Password Manager Menu:"); // '!' denotes that println is a macro.
+        loop {  
+            println!(); 
+            println!("Password Manager Menu:");  
             println!("1. Add New Entry");
             println!("2. View All Entries");
             println!("3. Edit an Entry");
             println!("4. Delete an Entry");
             println!("5. Logout");
             println!();
-            println!("Enter your selection from 1-6: ");
+            println!("Enter your selection from 1-5: ");
 
             // will need to allocate data from the heap for a String
             let mut input = get_input();
@@ -133,10 +139,11 @@ pub mod menu {
         let mut run_options: bool = true;
 
         loop {
+            println!();
             println!("Would you like the system to generate a password for you?");
             println!("Enter (y/n), or enter q to return to the main menu: ");
 
-            let mut input = get_one_letter_input();
+            let input = get_one_letter_input();
 
             match input.as_str() {
                 "y" => { 
@@ -144,6 +151,21 @@ pub mod menu {
                 },
                 "n" => {
                     let entry: AccountInfo = prompt_account_info_all();
+                    if let Ok(_) = AccountInfo::add_account(entry) {
+                        println!();
+                        println!("New account successfully added!");
+                        println!();
+                        println!("Would you like to add another account? Enter (y/n):");
+                        let input = get_one_letter_input();
+                        if input == "y" {
+                            add_entry_menu();
+                        }
+                        else {
+                            run_options = false;
+                        }
+                    } else {
+                        run_options = false;
+                    }
                 }
                 "q" => {
                     run_options = false;
@@ -164,18 +186,21 @@ pub mod menu {
         let mut complete: bool = false;
 
         loop {
+            
             let account_name = get_account_name();
             let username = get_username();
             let password = get_password();
+            let client_id: Option<u8> = get_client_id();
 
             if !account_name.is_empty() && !username.is_empty() && !password.is_empty() {
                 println!("{}", account_name);
                 println!("{}", username);
                 println!("{}", password);
-                entry = AccountInfo {      // entry takes ownership of all 3 values
+                entry = AccountInfo {      // entry takes ownership of all 4 values
                     account: account_name,
                     username,
                     password,
+                    clientId: client_id.unwrap(), // extracts the Some value from the Option enum
                 };
                 complete = true;
             }
@@ -222,6 +247,7 @@ pub mod menu {
         let mut account_name = String::new();
 
         loop {
+            println!(); 
             println!("Enter the name of your account: ");
             account_name = get_input();
             if account_name.is_empty() {
@@ -270,6 +296,7 @@ pub mod menu {
         let mut password = String::new();
 
         loop {
+            println!(); 
             println!("Enter your account password: ");
             password = get_input();
             if password.is_empty() {

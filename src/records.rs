@@ -11,6 +11,7 @@ pub mod records {
 
     #[derive(Debug)] // gives the derived trait to AccountInfo
     pub struct AccountInfo {
+        pub clientId: u8,
         pub account: String,
         pub username: String,
         pub password: String
@@ -21,7 +22,7 @@ pub mod records {
         static USER_ID: Cell<Option<u8>> = Cell::new(None);
     }
 
-    pub fn set_user_id(id: Option<u8>) {
+    pub fn set_client_id(id: Option<u8>) {
         USER_ID.with(|cell| { // closures (denoted using ||) are similar to anonymous functions
             cell.set(id); // variants of Option are either Some or None
         })
@@ -33,31 +34,35 @@ pub mod records {
         let sql = "SELECT clientId FROM clients WHERE username = ? AND password = ?";
     
         // final argument ensures that only one row at the most is found (as it should be anyways)
-        let user_id: u8 = conn.query_row(sql, [username_input, password_input], |row| row.get(0))?;
-        println!("{:?}", Some(user_id));
+        let client_id: u8 = conn.query_row(sql, [username_input, password_input], |row| row.get(0))?;
+      
         // will only be called if a user_id is found due to '?' error propagation
-        set_user_id(Some(user_id)); // must convert user_id to Option<u8>
+        set_client_id(Some(client_id)); // must convert user_id to Option<u8>
     
         Ok(())
     }
 
     // retrieves current value for USER_ID
-    fn get_user_id() -> Option<u8> {
+    pub fn get_client_id() -> Option<u8> {
         USER_ID.with(|cell| {
             cell.get()
         })
     }
 
-    trait Transfer {
-       fn add_account() -> Result<()>;
+    pub trait Transfer {
+       fn add_account(entry: AccountInfo) -> Result<()>;
     }
 
-    /*impl Transfer for AccountInfo {
+    impl Transfer for AccountInfo {
         fn add_account(entry: AccountInfo) -> Result<()> {
             let conn = Connection::open("manager.db")?; 
-            let stmt: &str = "INSERT INTO accounts ()"
+            let stmt = "INSERT INTO accounts (accountName, accountUsername, accountPassword, clientId)
+            VALUES (?, ?, ?, ?)";
+            let client_id_string = entry.clientId.to_string();
+            conn.execute(stmt, [entry.account, entry.username, entry.password, client_id_string])?;
+            Ok(())
         }
-    }*/
+    }
 
     // implements a Default trait for AccountInfo
     // to avoid ownership-related issues by waiting
@@ -65,6 +70,7 @@ pub mod records {
     impl Default for AccountInfo {
         fn default() -> Self {
             Self {
+                clientId: u8::from(0),
                 account: String::from("default_account"),
                 username: String::from("default_username"),
                 password: String::from("default_password"),
