@@ -3,13 +3,10 @@ where information must be recorded in the manager
 database or retrieved from it. */
 
 pub mod records {
+    use rand::Rng; // for random password generation
+    use rusqlite::{Connection, Result, Error};
+
     
-    use rusqlite::{Connection, Result, Statement, Error, Rows};
-    use rusqlite::types::{FromSql, ValueRef, FromSqlError, FromSqlResult};
-
-    use std::fs::File;
-    use std::cell::Cell; // bends rules of immutability to change userId value
-
     #[derive(Debug)] // gives the derived trait to AccountInfo
     pub struct AccountInfo {
         pub account: String,
@@ -21,6 +18,13 @@ pub mod records {
     pub struct User {
         // value is None if a user is not logged in or an unsigned int up to 255
         pub client_id: Option<u8>
+    }
+
+    pub struct PasswordSpecs {
+        lower_letters: u8,
+        upper_letters: u8,
+        numbers: u8,
+        special_chars: u8
     }
 
     // a default trait helps avoid ownership-related 
@@ -44,6 +48,16 @@ pub mod records {
         fn default() -> Self {
             Self {
                 client_id: None
+            }
+        }
+    }
+    impl Default for PasswordSpecs {
+        fn default() -> Self {
+            Self {
+                lower_letters: 8,
+                upper_letters: 2,
+                numbers: 4,
+                special_chars: 4
             }
         }
     }
@@ -105,7 +119,7 @@ pub mod records {
     // contains methods necessary for transferring data to db
     pub trait Transfer {
        fn add_account(entry: AccountInfo, id: &Option<u8>) -> Result<()>;
-       fn edit_account(entry: AccountInfo, id: &Option<u8>) -> Result<()>;
+      // fn edit_account(entry: AccountInfo, id: &Option<u8>) -> Result<()>;
     }
 
     impl Transfer for AccountInfo {
@@ -117,18 +131,10 @@ pub mod records {
             conn.execute(stmt, [entry.account, entry.username, entry.password, client_id_string])?;
             Ok(())
         }
-
-        fn edit_account(entry: AccountInfo, id: &Option<u8>) -> Result<()> {
-            let conn = Connection::open("manager.db")?; 
-            let stmt = "INSERT INTO accounts (accountName, accountUsername, accountPassword, clientId)
-            VALUES (?, ?, ?, ?)";
-            let client_id_string = id.unwrap().to_string();
-            conn.execute(stmt, [entry.account, entry.username, entry.password, client_id_string])?;
-            Ok(())
-        }
     }
+ 
+    pub fn generate_password(length: u8) -> String {
 
-    pub fn generate_password() -> Vec<char> {
         // Define a vector containing characters for password generation
         let chars_pool: Vec<char> = (b'A'..=b'Z')
             // ..= makes the final value in every range inclusive
@@ -142,22 +148,18 @@ pub mod records {
             .map(|c| c as char)
             .collect(); // place all char values in the chars_pool vector
         
-        for c in &chars_pool {
-            print!("{}", c);
-        }
-        chars_pool
+        let mut rng = rand::thread_rng();
+
+        let password: String = (0..length).map(|_| chars_pool[rng.gen_range(0..chars_pool.len())]).collect();
+        password
     } 
     
-    fn read_sql_from_file(path: &str) -> String {
-        let mut file: File = File::open(path).unwrap();
-        let mut contents: String = String::new();
-        contents
-    }
-
     pub fn open_database() -> Result<Connection, Error> {
        
         let conn: Connection = Connection::open("manager.db")?;
         Ok(conn)
     }
-    
-}
+
+    }
+
+        

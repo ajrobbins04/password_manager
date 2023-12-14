@@ -5,7 +5,7 @@
 pub mod menu {
     use std::io; // input/output functionality
     use std::io::Write;
-    use crate::records::records::{AccountInfo, User, Transfer, open_database, Default, Retrieve}; // 'crate' begins module search at root of project
+    use crate::records::records::{AccountInfo, User, Transfer, open_database, Default, Retrieve, generate_password}; // 'crate' begins module search at root of project
 
     pub fn run_main_menu() {
         let mut run_program = true;
@@ -129,12 +129,13 @@ pub mod menu {
                             match user.get_accounts(&conn, &client_id) {
                                 
                                 Ok(accounts) => {
-                          
+                                    let mut num: u8 = 1;
                                     for account in accounts.iter() {
-
-                                        println!("Account: {}", account.account);
+                                        println!();
+                                        println!("Account {}: {}", num, account.account);
                                         println!("Username: {}", account.username);
                                         println!("Password: {}", account.password);
+                                        num += 1;
                                     }
                                 }
                                 Err(e) => {
@@ -183,7 +184,22 @@ pub mod menu {
 
             match input.as_str() {
                 "y" => { 
-                    println!("y!")
+                    let entry: AccountInfo = prompt_account_info_some();
+                    if let Ok(_) = AccountInfo::add_account(entry, &Some(curr_user.get_id())){
+                        println!();
+                        println!("New account successfully added!");
+                        println!();
+                        print!("Would you like to add another account? Enter (y/n): ");
+                        let input = get_one_letter_input();
+                        if input == "y" {
+                            add_entry_menu(&curr_user);
+                        }
+                        else {
+                            run_options = false;
+                        }
+                    } else {
+                        run_options = false;
+                    }
                 },
                 "n" => {
                     let entry: AccountInfo = prompt_account_info_all();
@@ -245,6 +261,34 @@ pub mod menu {
 
     }
 
+    pub fn prompt_account_info_some() -> AccountInfo {
+        let mut entry = AccountInfo::default();
+        let mut complete: bool = false;
+
+        loop {
+            
+            let account_name = get_account_name();
+            let username = get_username();
+            let password = get_password_generate();
+
+            if !account_name.is_empty() && !username.is_empty() {
+
+                
+                entry = AccountInfo {      // entry takes ownership of all 4 values
+                    account: account_name,
+                    username,
+                    password,
+                    accountId: None  // id gets assigned after entry is added to db
+                };
+                complete = true;
+            }
+            if complete {
+                break;
+            }
+        }
+        entry
+
+    }
     fn get_input() -> String {
         // always flush the buffer before receiving new input
         io::stdout().flush().expect("Failed to flush stdout");
@@ -347,5 +391,38 @@ pub mod menu {
         password
     }
 
-    
+    fn get_password_generate() -> String {
+
+        io::stdout().flush().expect("Failed to flush stdout");
+        let mut password_empty: bool = true;
+        let mut password = String::new();
+
+        loop {
+            println!(); 
+            print!("Enter the length of your password: ");
+            let length_string = get_input();
+            match length_string.parse::<u8>() {
+                Ok(length) => {
+                    password = generate_password(length);
+                }
+                Err(e) => {
+                    println!("ERROR: The new password length could not be found.");
+                }
+            }
+            
+            if password.is_empty() {
+                println!("ERROR: Password generation failed.");
+                println!();
+            } else {
+                password_empty = false;
+            }
+
+            if !password_empty {
+                break;
+            }
+        }
+
+        password
+    }
+
 }
