@@ -10,7 +10,7 @@ pub mod menu {
     pub fn run_main_menu() {
         let mut run_program = true;
         
-        loop {
+        while run_program {
             // '!' denotes that println! is a macro.
             print!("Enter 'y' to login or 'n' to close the program: ");
             let input = get_one_letter_input();
@@ -21,6 +21,8 @@ pub mod menu {
                     run_login_menu();
                 },
                 "n" => {
+                    println!();
+                    println!("Goodbye!");
                     run_program = false;
                 }
                 _ => {
@@ -28,11 +30,6 @@ pub mod menu {
                     println!("ERROR: Invalid input detected. Please enter 'y' to login or 'n' to logout.");
                 }
             } 
-            if !run_program { // end program
-                println!();
-                println!("Goodbye!");
-                break; 
-            }
         }
     }
     pub fn run_login_menu() {
@@ -113,18 +110,17 @@ pub mod menu {
 
             // will need to allocate data from the heap for a String
             let mut input = get_input();
+            
 
             match input.as_str() {
                 "1" => {
                     add_entry_menu(&user);
                 },
                 "2" => {
-                    let conn = open_database();
-
+                    let conn = open_database(); 
                     match conn {
                         Ok(conn) => {
                             // used to retrieve just the accounts that belong to the user
-                          
                             let client_id = user.get_id().to_string();
                             match user.get_accounts(&conn, &client_id) {
                                 
@@ -172,51 +168,50 @@ pub mod menu {
         }
     }
 
-    pub fn add_entry_menu(curr_user: &User) {
+    pub fn add_entry_menu(user: &User) {
         let mut run_options: bool = true;
 
-        loop {
+        while run_options {
             println!();
             println!("Would you like the system to generate a password for you?");
             print!("Enter (y/n), or enter q to return to the main menu: ");
 
             let input = get_one_letter_input();
+            let conn = open_database(); 
 
             match input.as_str() {
-                "y" => { 
-                    let entry: AccountInfo = prompt_account_info_some();
-                    if let Ok(_) = AccountInfo::add_account(entry, &Some(curr_user.get_id())){
-                        println!();
-                        println!("New account successfully added!");
-                        println!();
-                        print!("Would you like to add another account? Enter (y/n): ");
-                        let input = get_one_letter_input();
-                        if input == "y" {
-                            add_entry_menu(&curr_user);
+                "y" | "n" => {
+                    match conn {
+                        Ok(conn) => {
+                            let entry: AccountInfo = if input == "y" {
+                                prompt_account_info_generate()
+                            } else {
+                                prompt_account_info_all()
+                            };
+                            let outcome = AccountInfo::add_account(&conn, entry, &user.get_id());
+                            match outcome {
+                                Ok(_) => {
+                                    println!();
+                                    println!("New account successfully added!");
+                                    println!();
+                                    print!("Would you like to add another account? Enter (y/n): ");
+                                    let input = get_one_letter_input();
+                                    if input != "y" {
+                                        run_options = false;
+                                    }
+                                }
+                                Err(e) => {
+                                    println!();
+                                    println!("ERROR: The account was not added.");
+                                    run_options = false;
+                                }
+                            }
                         }
-                        else {
+                        Err(e) => {
+                            println!();
+                            println!("ERROR: Account could not be added. A failure to connect to the database occurred.");
                             run_options = false;
-                        }
-                    } else {
-                        run_options = false;
-                    }
-                },
-                "n" => {
-                    let entry: AccountInfo = prompt_account_info_all();
-                    if let Ok(_) = AccountInfo::add_account(entry, &Some(curr_user.get_id())){
-                        println!();
-                        println!("New account successfully added!");
-                        println!();
-                        print!("Would you like to add another account? Enter (y/n): ");
-                        let input = get_one_letter_input();
-                        if input == "y" {
-                            add_entry_menu(&curr_user);
-                        }
-                        else {
-                            run_options = false;
-                        }
-                    } else {
-                        run_options = false;
+                        } 
                     }
                 }
                 "q" => {
@@ -226,12 +221,8 @@ pub mod menu {
                     println!("ERROR: Invalid input detected. Please enter 'y', 'n', or 'q' to return to the main menu.");
                 }
             }
-
-            if !run_options {
-                break;
-            }
-        }
     }
+}
     // retrieves user input to create a new account entry
     pub fn prompt_account_info_all() -> AccountInfo {
         let mut entry = AccountInfo::default();
@@ -261,7 +252,8 @@ pub mod menu {
 
     }
 
-    pub fn prompt_account_info_some() -> AccountInfo {
+    // prompts for account name, username, and generates password
+    pub fn prompt_account_info_generate() -> AccountInfo {
         let mut entry = AccountInfo::default();
         let mut complete: bool = false;
 
@@ -350,6 +342,7 @@ pub mod menu {
         let mut username = String::new();
 
         loop {
+            println!(); 
             print!("Enter your account username: ");
             username = get_input();
             if username.is_empty() {
@@ -401,6 +394,8 @@ pub mod menu {
             println!(); 
             print!("Enter the length of your password: ");
             let length_string = get_input();
+
+            // parse string as 8-bit unsigned int
             match length_string.parse::<u8>() {
                 Ok(length) => {
                     password = generate_password(length);

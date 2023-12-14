@@ -116,20 +116,20 @@ pub mod records {
     }
 
     
-    // contains methods necessary for transferring data to db
+    // contains methods necessary for transferring data to db 
     pub trait Transfer {
-       fn add_account(entry: AccountInfo, id: &Option<u8>) -> Result<()>;
-      // fn edit_account(entry: AccountInfo, id: &Option<u8>) -> Result<()>;
+       fn add_account(conn: &Connection, entry: AccountInfo, id: &u8) -> Result<()>;
     }
 
     impl Transfer for AccountInfo {
-        fn add_account(entry: AccountInfo, id: &Option<u8>) -> Result<()> {
-            let conn = Connection::open("manager.db")?; 
+        fn add_account(conn: &Connection, entry: AccountInfo, id: &u8) -> Result<()> {
             let stmt = "INSERT INTO accounts (accountName, accountUsername, accountPassword, clientId)
             VALUES (?, ?, ?, ?)";
-            let client_id_string = id.unwrap().to_string(); // unwrap to retrieve the 8-bit value of Some
+            let client_id_string = id.to_string(); 
+           
             conn.execute(stmt, [entry.account, entry.username, entry.password, client_id_string])?;
-            Ok(())
+
+            Ok(()) // only an indication of success needs to be sent back
         }
     }
  
@@ -148,8 +148,11 @@ pub mod records {
             .map(|c| c as char)
             .collect(); // place all char values in the chars_pool vector
         
+        // initializes a random number generator
         let mut rng = rand::thread_rng();
 
+        // generates password w/specified length by repeatedly selecting random characters
+        // from the chars_pool vector and collecting them into the password String
         let password: String = (0..length).map(|_| chars_pool[rng.gen_range(0..chars_pool.len())]).collect();
         password
     } 

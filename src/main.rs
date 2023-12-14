@@ -4,9 +4,8 @@ mod menu;  // Will either look for menu.rs in same directory or, if not
 mod records;
 use rusqlite::{Connection, Result};
 fn main() {
-    menu::menu::run_main_menu();
+   menu::menu::run_main_menu();
 }
-
 
 /* This method only needed to be run once to created the db.
    It is being kept in case the db ever needs to be re-built. */
@@ -27,11 +26,11 @@ fn build_db() -> Result<()> {  // returns a Result tuple
         accountId INTEGER PRIMARY KEY AUTOINCREMENT,
         clientId INTEGER REFERENCES clients(clientId) ON DELETE CASCADE ON UPDATE CASCADE, 
         accountName TEXT NOT NULL,
-        accountUsername TEXT NOT NULL UNIQUE,
+        accountUsername TEXT NOT NULL,
         accountPassword TEXT NOT NULL)
 
     "#; // the clientId foreign key in vault links the data so all
-          // accounts for a particular client can be easily found
+        // accounts for a particular client can be easily found
 
     conn.execute(accounts_table, [])?;
 
