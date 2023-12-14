@@ -137,7 +137,9 @@ pub mod records {
 
         // Define a vector containing characters for password generation
         let chars_pool: Vec<char> = (b'A'..=b'Z')
-            // ..= makes the final value in every range inclusive
+        
+            // adding b means everything is accessed by its ascii values
+            // the ranges shown are found using a chart of ascii values
             .chain(b'a'..=b'z') 
             .chain(b'0'..=b'9')
             .chain(b'!'..=b'/')
