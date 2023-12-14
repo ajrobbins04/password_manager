@@ -1,0 +1,26 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "attach",
+            "name": "Attach",
+            "program": "${workspaceFolder}/password_manager"
+        },
+
+      
+        {
+        "name": "(OSX) launch",
+        "type": "lldb",
+        "request": "attach",
+        "name": "Attach",
+        "program": "${workspaceRoot}/target/debug/password_manager.d",
+        "args": [],
+        "cwd": "${workspaceRoot}"
+        }
+
+    ]
+}

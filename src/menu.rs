@@ -5,7 +5,7 @@
 pub mod menu {
     use std::io; // input/output functionality
     use std::io::Write;
-    use crate::records::records::{AccountInfo, User, Transfer, lookup_user, set_client_id, get_client_id, Default}; // 'crate' begins module search at root of project
+    use crate::records::records::{AccountInfo, User, Transfer, open_database, Default, Retrieve}; // 'crate' begins module search at root of project
 
     pub fn run_main_menu() {
         let mut run_program = true;
@@ -39,6 +39,7 @@ pub mod menu {
         let mut run_menu = true; 
         let mut username_input = String::new();
         let mut password_input = String::new();
+        let mut user = User::default();
         loop {   
             println!("Password Manager Login");
             println!();
@@ -59,24 +60,32 @@ pub mod menu {
                     println!("ERROR: No password entered. Please try again.");
                 }
                 else {
-                    match lookup_user(&username_input, &password_input) {
+                    match user.lookup_user(&username_input, &password_input) {
                         // use wildcard, since value has already been set as user_id
                         // in lookup_user & no longer matters
-                        Ok(id) => {
+                        Ok((Some(client_id),))=> {
+                     
                             println!();
                             println!("You are logged in!");
-
+                    
+                            user.set_client_id(Some(client_id));
+                           
                             // only stops running when user wants to logout
-                            run_logged_in_menu();
-                            set_client_id(None); // Option can either be None or Some()
+                            run_logged_in_menu(&user);
+                            user.set_client_id(None); // Option can either be None or Some()
                             run_menu = false;
                             println!();
                             println!("Logout successful");
 
                         }
-                        Err(e) => {
+                        Ok((None,)) => {
                             println!();
                             println!("The login attempt failed. Please try again.");
+                            run_main_menu();
+                        }
+                        Err(e) => {
+                            println!();
+                            println!("An error occurred during the login attempt. Please try again.");
                             run_main_menu();
                         }
                     }
@@ -87,10 +96,9 @@ pub mod menu {
             }
         }
     }
-    pub fn run_logged_in_menu() {
+    pub fn run_logged_in_menu(user: &User) {
         // exit condition for the loop
         let mut run_menu: bool = true;
-        let mut curr_user = User::default();
 
         loop {  
             println!(); 
@@ -108,11 +116,40 @@ pub mod menu {
 
             match input.as_str() {
                 "1" => {
-                    add_entry_menu();
+                    add_entry_menu(&user);
                 },
                 "2" => {
-                    let rows: Result<Rows, Error>  = AccountInfo::get_accounts();
-      
+                    let conn = open_database();
+
+                    match conn {
+                        Ok(conn) => {
+                            // used to retrieve just the accounts that belong to the user
+                          
+                            let client_id = user.get_id().to_string();
+                            match user.get_accounts(&conn, &client_id) {
+                                
+                                Ok(accounts) => {
+                          
+                                    for account in accounts.iter() {
+
+                                        println!("Account: {}", account.account);
+                                        println!("Username: {}", account.username);
+                                        println!("Password: {}", account.password);
+                                    }
+                                }
+                                Err(e) => {
+                                    println!();
+                                    println!("An error occurred when retrieving accounts from the database.");
+                                   
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            println!();
+                            println!("An error occurred when connecting to the database.");
+                          
+                        }
+                    }
                 },
                 "3" => {
                     println!("3!")
@@ -134,7 +171,7 @@ pub mod menu {
         }
     }
 
-    pub fn add_entry_menu() {
+    pub fn add_entry_menu(curr_user: &User) {
         let mut run_options: bool = true;
 
         loop {
@@ -150,14 +187,14 @@ pub mod menu {
                 },
                 "n" => {
                     let entry: AccountInfo = prompt_account_info_all();
-                    if let Ok(_) = AccountInfo::add_account(entry) {
+                    if let Ok(_) = AccountInfo::add_account(entry, &Some(curr_user.get_id())){
                         println!();
                         println!("New account successfully added!");
                         println!();
                         print!("Would you like to add another account? Enter (y/n): ");
                         let input = get_one_letter_input();
                         if input == "y" {
-                            add_entry_menu();
+                            add_entry_menu(&curr_user);
                         }
                         else {
                             run_options = false;
@@ -189,17 +226,14 @@ pub mod menu {
             let account_name = get_account_name();
             let username = get_username();
             let password = get_password();
-            let client_id: Option<u8> = get_client_id();
 
             if !account_name.is_empty() && !username.is_empty() && !password.is_empty() {
-                println!("{}", account_name);
-                println!("{}", username);
-                println!("{}", password);
+                
                 entry = AccountInfo {      // entry takes ownership of all 4 values
                     account: account_name,
                     username,
                     password,
-                    clientId: client_id.unwrap(), // extracts the Some value from the Option enum
+                    accountId: None  // id gets assigned after entry is added to db
                 };
                 complete = true;
             }
@@ -312,4 +346,6 @@ pub mod menu {
 
         password
     }
+
+    
 }
